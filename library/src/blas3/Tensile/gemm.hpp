@@ -14,6 +14,9 @@
 
 #else // USE_TENSILE_HOST
 
+#include "sys/time.h"
+#include "logging.h"
+
 /*******************************************************************************
  * Helper enumeration over different transpose combinations
  ******************************************************************************/
@@ -414,24 +417,54 @@ inline rocblas_status call_tensile(rocblas_handle    handle,
 
 #else // USE_TENSILE_HOST
 
-    return tensile_helper(*alpha,
-                          *beta,
-                          A,
-                          B,
-                          C,
-                          trans_a,
-                          trans_b,
-                          ld_c,
-                          stride_c,
-                          ld_a,
-                          stride_a,
-                          ld_b,
-                          stride_b,
-                          m,
-                          n,
-                          batch_count,
-                          k,
-                          handle);
+    rocblas_status ret;
+
+    if (handle->layer_mode & rocblas_layer_mode_log_bench) {
+        struct timeval start, end;
+        gettimeofday(&start, NULL);
+        ret = tensile_helper(*alpha,
+                              *beta,
+                              A,
+                              B,
+                              C,
+                              trans_a,
+                              trans_b,
+                              ld_c,
+                              stride_c,
+                              ld_a,
+                              stride_a,
+                              ld_b,
+                              stride_b,
+                              m,
+                              n,
+                              batch_count,
+                              k,
+                              handle);
+        gettimeofday(&end, NULL);
+        unsigned long long us = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_usec - start.tv_usec);
+        log_bench(handle, "durationUs", us);
+    } else {
+        ret = tensile_helper(*alpha,
+                              *beta,
+                              A,
+                              B,
+                              C,
+                              trans_a,
+                              trans_b,
+                              ld_c,
+                              stride_c,
+                              ld_a,
+                              stride_a,
+                              ld_b,
+                              stride_b,
+                              m,
+                              n,
+                              batch_count,
+                              k,
+                              handle);
+    }
+
+    return ret;
 
 #endif // USE_TENSILE_HOST
 }
