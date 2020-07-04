@@ -199,12 +199,17 @@ rocblas_status rocblas_hgemm(rocblas_handle      handle,
 try
 {
     rocblas_status ret;
-    double elapsed_time = get_elapsed_time();
-    ret = rocblas_gemm_impl(
-        handle, trans_a, trans_b, m, n, k, alpha, A, ld_a, B, ld_b, beta, C, ld_c);
-    elapsed_time = get_elapsed_time() - elapsed_time;
-    if (handle->layer_mode & rocblas_layer_mode_log_bench)
+    double elapsed_time = 0.0;
+    if (handle->layer_mode & rocblas_layer_mode_log_bench) {
+        elapsed_time = get_elapsed_time();
+        ret = rocblas_gemm_impl(
+            handle, trans_a, trans_b, m, n, k, alpha, A, ld_a, B, ld_b, beta, C, ld_c);
+        elapsed_time = get_elapsed_time() - elapsed_time;
         log_bench(handle, "DurationUs", elapsed_time);
+    } else {
+        ret = rocblas_gemm_impl(
+            handle, trans_a, trans_b, m, n, k, alpha, A, ld_a, B, ld_b, beta, C, ld_c);
+    }
     return ret;
 }
 catch(...)

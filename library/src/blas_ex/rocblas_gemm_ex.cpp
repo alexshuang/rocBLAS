@@ -308,34 +308,64 @@ extern "C" rocblas_status rocblas_gemm_ex(rocblas_handle    handle,
 try
 {
     rocblas_status ret;
-    double elapsed_time = get_elapsed_time();
-    ret = rocblas_gemm_ex_impl(handle,
-                                trans_a,
-                                trans_b,
-                                m,
-                                n,
-                                k,
-                                alpha,
-                                a,
-                                a_type,
-                                lda,
-                                b,
-                                b_type,
-                                ldb,
-                                beta,
-                                c,
-                                c_type,
-                                ldc,
-                                d,
-                                d_type,
-                                ldd,
-                                compute_type,
-                                algo,
-                                solution_index,
-                                flags);
-    elapsed_time = get_elapsed_time() - elapsed_time;
-    if (handle->layer_mode & rocblas_layer_mode_log_bench)
-        log_bench(handle, "DurationUs", elapsed_time);
+
+   // if (handle->layer_mode & rocblas_layer_mode_log_bench) {
+        double elapsed_time = get_elapsed_time();
+        ret = rocblas_gemm_ex_impl(handle,
+                                    trans_a,
+                                    trans_b,
+                                    m,
+                                    n,
+                                    k,
+                                    alpha,
+                                    a,
+                                    a_type,
+                                    lda,
+                                    b,
+                                    b_type,
+                                    ldb,
+                                    beta,
+                                    c,
+                                    c_type,
+                                    ldc,
+                                    d,
+                                    d_type,
+                                    ldd,
+                                    compute_type,
+                                    algo,
+                                    solution_index,
+                                    flags);
+        elapsed_time = get_elapsed_time() - elapsed_time;
+        printf("DurationUs: %f\n", elapsed_time);
+        //log_bench(handle, "DurationUs", elapsed_time);
+/*
+    } else {
+        ret = rocblas_gemm_ex_impl(handle,
+                                    trans_a,
+                                    trans_b,
+                                    m,
+                                    n,
+                                    k,
+                                    alpha,
+                                    a,
+                                    a_type,
+                                    lda,
+                                    b,
+                                    b_type,
+                                    ldb,
+                                    beta,
+                                    c,
+                                    c_type,
+                                    ldc,
+                                    d,
+                                    d_type,
+                                    ldd,
+                                    compute_type,
+                                    algo,
+                                    solution_index,
+                                    flags);
+    }
+*/
     return ret;
 }
 catch(...)

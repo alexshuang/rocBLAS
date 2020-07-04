@@ -49,7 +49,9 @@ extern "C" rocblas_status rocblas_gemm_strided_batched_ex(rocblas_handle    hand
 try
 {
     rocblas_status ret;
-    double elapsed_time = get_elapsed_time();
+    double elapsed_time = 0.0;
+    if (handle->layer_mode & rocblas_layer_mode_log_bench)
+        elapsed_time = get_elapsed_time();
 
     if(!handle)
         return rocblas_status_invalid_handle;
@@ -315,9 +317,12 @@ try
                                            stride_d,
                                            batch_count,
                                            compute_type);
-    elapsed_time = get_elapsed_time() - elapsed_time;
-    if (handle->layer_mode & rocblas_layer_mode_log_bench)
+
+    if (handle->layer_mode & rocblas_layer_mode_log_bench) {
+        elapsed_time = get_elapsed_time() - elapsed_time;
         log_bench(handle, "DurationUs", elapsed_time);
+    }
+
     return ret;
 }
 catch(...)
