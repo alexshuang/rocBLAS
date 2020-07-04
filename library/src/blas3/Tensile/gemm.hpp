@@ -14,6 +14,19 @@
 
 #else // USE_TENSILE_HOST
 
+#if 0
+#include "sys/time.h"
+#include "logging.h"
+
+static double _get_elapsed_time(void)
+{
+    hipDeviceSynchronize();
+    struct timespec tv;
+    clock_gettime(CLOCK_MONOTONIC, &tv);
+    return tv.tv_sec * 1'000'000llu + (tv.tv_nsec + 500llu) / 1000;
+}
+#endif
+
 /*******************************************************************************
  * Helper enumeration over different transpose combinations
  ******************************************************************************/
@@ -414,6 +427,54 @@ inline rocblas_status call_tensile(rocblas_handle    handle,
 
 #else // USE_TENSILE_HOST
 
+#if 0
+    rocblas_status ret;
+
+    if (handle->layer_mode & rocblas_layer_mode_log_bench) {
+        double elapsed_time = _get_elapsed_time();
+        ret = tensile_helper(*alpha,
+                              *beta,
+                              A,
+                              B,
+                              C,
+                              trans_a,
+                              trans_b,
+                              ld_c,
+                              stride_c,
+                              ld_a,
+                              stride_a,
+                              ld_b,
+                              stride_b,
+                              m,
+                              n,
+                              batch_count,
+                              k,
+                              handle);
+        elapsed_time = _get_elapsed_time() - elapsed_time;
+        log_bench(handle, "DurationUs", elapsed_time);
+    } else {
+        ret = tensile_helper(*alpha,
+                              *beta,
+                              A,
+                              B,
+                              C,
+                              trans_a,
+                              trans_b,
+                              ld_c,
+                              stride_c,
+                              ld_a,
+                              stride_a,
+                              ld_b,
+                              stride_b,
+                              m,
+                              n,
+                              batch_count,
+                              k,
+                              handle);
+    }
+
+    return ret;
+#else
     return tensile_helper(*alpha,
                           *beta,
                           A,
@@ -432,6 +493,7 @@ inline rocblas_status call_tensile(rocblas_handle    handle,
                           batch_count,
                           k,
                           handle);
+#endif
 
 #endif // USE_TENSILE_HOST
 }

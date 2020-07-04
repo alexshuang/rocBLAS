@@ -10,7 +10,17 @@
 #endif
 #include "gemm.hpp"
 #include "handle.h"
+#if 0
 #include "logging.h"
+
+static double get_elapsed_time(void)
+{
+    hipDeviceSynchronize();
+    struct timespec tv;
+    clock_gettime(CLOCK_MONOTONIC, &tv);
+    return tv.tv_sec * 1'000'000llu + (tv.tv_nsec + 500llu) / 1000;
+}
+#endif
 
 /////////////////
 // Device Side //
@@ -687,6 +697,38 @@ rocblas_status gemm_ex_batched_template(rocblas_handle    handle,
 
 #else // USE_TENSILE_HOST
 
+#if 0
+    TensileStatus  t_status;
+    rocblas_status rb_status;
+
+    double elapsed_time = get_elapsed_time();
+    t_status = call_tensile_ex<Ti, To, Tc>(d,
+                                           c_in,
+                                           a,
+                                           b,
+                                           *alpha,
+                                           *beta,
+                                           ldd,
+                                           stride_d,
+                                           ldi,
+                                           stride_i,
+                                           lda,
+                                           stride_a,
+                                           ldb,
+                                           stride_b,
+                                           m,
+                                           n,
+                                           batch_count,
+                                           k,
+                                           handle->rocblas_stream,
+                                           GetTransposeMode(trans_a, trans_b),
+                                           &handle->startEvent,
+                                           &handle->stopEvent);
+    elapsed_time = get_elapsed_time() - elapsed_time;
+
+    if (handle->layer_mode & rocblas_layer_mode_log_bench)
+        log_bench(handle, "DurationUs", elapsed_time);
+#else
     TensileStatus  t_status;
     rocblas_status rb_status;
 
@@ -712,6 +754,7 @@ rocblas_status gemm_ex_batched_template(rocblas_handle    handle,
                                            GetTransposeMode(trans_a, trans_b),
                                            &handle->startEvent,
                                            &handle->stopEvent);
+#endif
 
     rb_status = (t_status == tensileStatusSuccess) ? rocblas_status_success
                                                    : rocblas_status_internal_error;

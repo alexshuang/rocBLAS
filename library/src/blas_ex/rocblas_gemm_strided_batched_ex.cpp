@@ -7,6 +7,15 @@
 #include "rocblas_gemm_ex.hpp"
 #include "utility.h"
 
+/* timing */
+static double get_elapsed_time(void)
+{
+    hipDeviceSynchronize();
+    struct timespec tv;
+    clock_gettime(CLOCK_MONOTONIC, &tv);
+    return tv.tv_sec * 1'000'000llu + (tv.tv_nsec + 500llu) / 1000;
+}
+
 extern "C" rocblas_status rocblas_gemm_strided_batched_ex(rocblas_handle    handle,
                                                           rocblas_operation trans_a,
                                                           rocblas_operation trans_b,
@@ -36,8 +45,12 @@ extern "C" rocblas_status rocblas_gemm_strided_batched_ex(rocblas_handle    hand
                                                           rocblas_gemm_algo algo,
                                                           int32_t           solution_index,
                                                           uint32_t          flags)
+
 try
 {
+    rocblas_status ret;
+    double elapsed_time = get_elapsed_time();
+
     if(!handle)
         return rocblas_status_invalid_handle;
 
@@ -272,7 +285,7 @@ try
     if(validArgs != rocblas_status_continue)
         return validArgs;
 
-    return rocblas_gemm_ex_template<false>(handle,
+    ret = rocblas_gemm_ex_template<false>(handle,
                                            trans_a,
                                            trans_b,
                                            m,
@@ -302,6 +315,10 @@ try
                                            stride_d,
                                            batch_count,
                                            compute_type);
+    elapsed_time = get_elapsed_time() - elapsed_time;
+    if (handle->layer_mode & rocblas_layer_mode_log_bench)
+        log_bench(handle, "DurationUs", elapsed_time);
+    return ret;
 }
 catch(...)
 {

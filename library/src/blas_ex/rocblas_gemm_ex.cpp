@@ -8,6 +8,15 @@
 #include "rocblas.h"
 #include "utility.h"
 
+/* timing */
+static double get_elapsed_time(void)
+{
+    hipDeviceSynchronize();
+    struct timespec tv;
+    clock_gettime(CLOCK_MONOTONIC, &tv);
+    return tv.tv_sec * 1'000'000llu + (tv.tv_nsec + 500llu) / 1000;
+}
+
 rocblas_status rocblas_gemm_ex_impl(rocblas_handle    handle,
                                     rocblas_operation trans_a,
                                     rocblas_operation trans_b,
@@ -298,7 +307,9 @@ extern "C" rocblas_status rocblas_gemm_ex(rocblas_handle    handle,
                                           uint32_t          flags)
 try
 {
-    return rocblas_gemm_ex_impl(handle,
+    rocblas_status ret;
+    double elapsed_time = get_elapsed_time();
+    ret = rocblas_gemm_ex_impl(handle,
                                 trans_a,
                                 trans_b,
                                 m,
@@ -322,6 +333,10 @@ try
                                 algo,
                                 solution_index,
                                 flags);
+    elapsed_time = get_elapsed_time() - elapsed_time;
+    if (handle->layer_mode & rocblas_layer_mode_log_bench)
+        log_bench(handle, "DurationUs", elapsed_time);
+    return ret;
 }
 catch(...)
 {
