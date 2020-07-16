@@ -8,6 +8,31 @@
 
 #include "handle.h"
 
+#define HIP_CHECK_EXC(expr) \
+    do \
+    { \
+        hipError_t e = (expr); \
+        if(e) \
+        { \
+            const char * errName = hipGetErrorName(e); \
+            const char * errMsg = hipGetErrorString(e); \
+            std::ostringstream msg; \
+            msg << "Error " << e << "(" << errName << ") " \
+                          << __FILE__ << ":" << __LINE__ << ": " << std::endl \
+                      << #expr << std::endl \
+                      << errMsg << std::endl; \
+            throw std::runtime_error(msg.str()); \
+        } \
+    } while(0)
+
+static double _get_time_us(void)
+{
+    HIP_CHECK_EXC(hipDeviceSynchronize());
+    struct timespec tv;
+    clock_gettime(CLOCK_MONOTONIC, &tv);
+    return tv.tv_sec * 1'000'000llu + (tv.tv_nsec + 500llu) / 1000;
+};
+
 #ifdef USE_TENSILE_HOST
 
 #include "tensile_host.hpp"
@@ -414,7 +439,11 @@ inline rocblas_status call_tensile(rocblas_handle    handle,
 
 #else // USE_TENSILE_HOST
 
-    return tensile_helper(*alpha,
+    rocblas_status t_status;
+
+    double gpu_time_used, cpu_time_used;
+    gpu_time_used = _get_time_us(); // in microseconds
+    t_status = tensile_helper(*alpha,
                           *beta,
                           A,
                           B,
@@ -432,6 +461,10 @@ inline rocblas_status call_tensile(rocblas_handle    handle,
                           batch_count,
                           k,
                           handle);
+    gpu_time_used  = _get_time_us() - gpu_time_used;
+    std::cout << "durtion: " << gpu_time_used << " us" << std::endl;
+
+    return t_status;
 
 #endif // USE_TENSILE_HOST
 }

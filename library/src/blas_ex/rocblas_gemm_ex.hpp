@@ -12,6 +12,31 @@
 #include "handle.h"
 #include "logging.h"
 
+#define HIP_CHECK_EXC(expr) \
+    do \
+    { \
+        hipError_t e = (expr); \
+        if(e) \
+        { \
+            const char * errName = hipGetErrorName(e); \
+            const char * errMsg = hipGetErrorString(e); \
+            std::ostringstream msg; \
+            msg << "Error " << e << "(" << errName << ") " \
+                          << __FILE__ << ":" << __LINE__ << ": " << std::endl \
+                      << #expr << std::endl \
+                      << errMsg << std::endl; \
+            throw std::runtime_error(msg.str()); \
+        } \
+    } while(0)
+
+static double get_time_us(void)
+{
+    HIP_CHECK_EXC(hipDeviceSynchronize());
+    struct timespec tv;
+    clock_gettime(CLOCK_MONOTONIC, &tv);
+    return tv.tv_sec * 1'000'000llu + (tv.tv_nsec + 500llu) / 1000;
+};
+
 /////////////////
 // Device Side //
 /////////////////
@@ -690,6 +715,8 @@ rocblas_status gemm_ex_batched_template(rocblas_handle    handle,
     TensileStatus  t_status;
     rocblas_status rb_status;
 
+    double gpu_time_used, cpu_time_used;
+    gpu_time_used = get_time_us(); // in microseconds
     t_status = call_tensile_ex<Ti, To, Tc>(d,
                                            c_in,
                                            a,
@@ -712,6 +739,8 @@ rocblas_status gemm_ex_batched_template(rocblas_handle    handle,
                                            GetTransposeMode(trans_a, trans_b),
                                            &handle->startEvent,
                                            &handle->stopEvent);
+    gpu_time_used  = get_time_us() - gpu_time_used;
+    std::cout << "durtion: " << gpu_time_used << " us" << std::endl;
 
     rb_status = (t_status == tensileStatusSuccess) ? rocblas_status_success
                                                    : rocblas_status_internal_error;
