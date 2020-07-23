@@ -12,6 +12,15 @@
 #include "handle.h"
 #include "logging.h"
 
+/*! \brief  CPU Timer(in microsecond): synchronize with given queue/stream and return wall time */
+static double get_time_us_sync(hipStream_t stream)
+{
+    hipStreamSynchronize(stream);
+    struct timespec tv;
+    clock_gettime(CLOCK_MONOTONIC, &tv);
+    return tv.tv_sec * 1'000'000llu + (tv.tv_nsec + 500llu) / 1000;
+};
+
 /////////////////
 // Device Side //
 /////////////////
@@ -682,7 +691,22 @@ rocblas_status gemm_ex_batched_template(rocblas_handle    handle,
         handle, trans_a,  trans_b, m,    n,   k,        alpha, a,   lda,      stride_a,   b,
         ldb,    stride_b, beta,    c_in, ldi, stride_i, d,     ldd, stride_d, batch_count};
 
-    return runContractionProblem(problem);
+    rocblas_status res;
+    if(handle->layer_mode & rocblas_layer_mode_log_bench)
+    {
+        hipStream_t stream;
+        CHECK_ROCBLAS_ERROR(rocblas_get_stream(handle, &stream));
+        double gpu_time_used = get_time_us_sync(stream); // in microseconds
+        res                  = runContractionProblem(problem);
+        gpu_time_used        = get_time_us_sync(stream) - gpu_time_used;
+        std::cout << "kernel duration us: " << gpu_time_used << std::endl;
+        log_bench(handle, "kernel duration us: ", gpu_time_used);
+    }
+    else
+    {
+        res = runContractionProblem(problem);
+    }
+    return res;
 
 #else // USE_TENSILE_HOST
 
