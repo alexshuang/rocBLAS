@@ -247,6 +247,21 @@ rocblas_status rocblas_gemm_ex_impl(rocblas_handle    handle,
                                            compute_type);
 }
 
+static double get_time_us_sync(hipStream_t stream)
+{
+    hipStreamSynchronize(stream);
+    struct timespec tv;
+    clock_gettime(CLOCK_MONOTONIC, &tv);
+    return tv.tv_sec * 1'000'000llu + (tv.tv_nsec + 500llu) / 1000;
+};
+
+static double get_time_us(void)
+{
+    struct timespec tv;
+    clock_gettime(CLOCK_MONOTONIC, &tv);
+    return tv.tv_sec * 1'000'000llu + (tv.tv_nsec + 500llu) / 1000;
+};
+
 extern "C" rocblas_status rocblas_gemm_ex(rocblas_handle    handle,
                                           rocblas_operation trans_a,
                                           rocblas_operation trans_b,
@@ -273,30 +288,75 @@ extern "C" rocblas_status rocblas_gemm_ex(rocblas_handle    handle,
                                           uint32_t          flags)
 try
 {
-    return rocblas_gemm_ex_impl(handle,
-                                trans_a,
-                                trans_b,
-                                m,
-                                n,
-                                k,
-                                alpha,
-                                a,
-                                a_type,
-                                lda,
-                                b,
-                                b_type,
-                                ldb,
-                                beta,
-                                c,
-                                c_type,
-                                ldc,
-                                d,
-                                d_type,
-                                ldd,
-                                compute_type,
-                                algo,
-                                solution_index,
-                                flags);
+    rocblas_status res;
+    /*
+    if (handle->layer_mode & rocblas_layer_mode_log_bench)
+    {
+    */
+    /*
+        hipStream_t stream;
+        rocblas_get_stream(handle, &stream);
+        */
+    //double gpu_time_used = get_time_us(); // in microseconds
+    res = rocblas_gemm_ex_impl(handle,
+                               trans_a,
+                               trans_b,
+                               m,
+                               n,
+                               k,
+                               alpha,
+                               a,
+                               a_type,
+                               lda,
+                               b,
+                               b_type,
+                               ldb,
+                               beta,
+                               c,
+                               c_type,
+                               ldc,
+                               d,
+                               d_type,
+                               ldd,
+                               compute_type,
+                               algo,
+                               solution_index,
+                               flags);
+    //gpu_time_used = get_time_us_sync(handle->rocblas_stream) - gpu_time_used;
+    //gpu_time_used = get_time_us() - gpu_time_used;
+    //std::cout << "kernel duration us: " << gpu_time_used << std::endl;
+    //log_bench(handle, "kernel duration us: ", gpu_time_used);
+    /*
+    }
+    else
+    {
+        res = rocblas_gemm_ex_impl(handle,
+                                    trans_a,
+                                    trans_b,
+                                    m,
+                                    n,
+                                    k,
+                                    alpha,
+                                    a,
+                                    a_type,
+                                    lda,
+                                    b,
+                                    b_type,
+                                    ldb,
+                                    beta,
+                                    c,
+                                    c_type,
+                                    ldc,
+                                    d,
+                                    d_type,
+                                    ldd,
+                                    compute_type,
+                                    algo,
+                                    solution_index,
+                                    flags);
+    }
+    */
+    return res;
 }
 catch(...)
 {
