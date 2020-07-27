@@ -153,7 +153,7 @@ if( CUDA_FOUND )
 else( )
   # auto set in hip_common.h
   #target_compile_definitions( rocblas-bench PRIVATE __HIP_PLATFORM_HCC__ )
-  target_link_libraries( rocblas-bench PRIVATE hip::device )
+  target_link_libraries( rocblas-bench PRIVATE hip::host hip::device )
 endif( )
 
 if( CMAKE_CXX_COMPILER MATCHES ".*/hcc$" )
@@ -167,7 +167,7 @@ elseif( CMAKE_COMPILER_IS_GNUCXX OR CXX_VERSION_STRING MATCHES "clang")
 endif( )
 
 if( CXX_VERSION_STRING MATCHES "clang" )
-  target_link_libraries( rocblas-bench PRIVATE -lpthread -lstdc++ -lgcc_s -lm -rtlib=compiler-rt )
+  target_link_libraries( rocblas-bench PRIVATE -lpthread -lstdc++ -lgcc_s -lm )
   if(OS_ID_rhel OR OS_ID_centos)
     set(CMAKE_CXX_FLAGS "-isystem ${CLANG_INCLUDE_DIR} -isystem ${XXX_OPENMP_INCLUDE_DIR} ${CMAKE_CXX_FLAGS}")
   endif( )
