@@ -818,12 +818,19 @@ int run_bench_test(Arguments& arg)
             rocblas_cout << "rocblas-bench INFO: ldd < min_ldd, set ldd = " << min_ldc << std::endl;
             arg.ldd = min_ldd;
         }
-        rocblas_int min_stride_c = arg.ldc * arg.N;
-        if(arg.stride_c < min_stride_c)
+        // transpose on dimension 0 and dimension 1
+        bool transpose_c         = (arg.ldc > arg.stride_c && arg.stride_c * arg.batch_count == arg.ldc) ? 1 : 0;
+        rocblas_int stride_c     = transpose_c ? arg.ldc : arg.stride_c;
+        rocblas_int ldc          = transpose_c ? arg.stride_c : arg.ldc;
+        rocblas_int min_stride_c = ldc * arg.N;
+        if(stride_c < min_stride_c)
         {
             rocblas_cout << "rocblas-bench INFO: stride_c < min_stride_c, set stride_c = "
                          << min_stride_c << std::endl;
-            arg.stride_c = min_stride_c;
+            if(!transpose_c)
+                arg.stride_c = min_stride_c;
+            else
+                arg.ldc = min_stride_c;
         }
 
         rocblas_gemm_dispatch<perf_gemm_strided_batched_ex>(arg);
