@@ -406,12 +406,15 @@ void testing_gemm_strided_batched_ex(const Arguments& arg)
         return;
     }
 
+    // transpose on dimension 0 and dimension 1, stride_c and ldc will be swapped after the transpose.
+    bool transpose_c = (ldc > stride_c && stride_c * batch_count == ldc) ? 1 : 0,
+         transpose_d = (ldd > stride_d && stride_d * batch_count == ldd) ? 1 : 0;
     size_t size_one_a
         = transA == rocblas_operation_none ? size_t(K) * size_t(lda) : size_t(M) * size_t(lda);
     size_t size_one_b
         = transB == rocblas_operation_none ? size_t(N) * size_t(ldb) : size_t(K) * size_t(ldb);
-    size_t size_one_c = N * ldc;
-    size_t size_one_d = N * ldd;
+    size_t size_one_c = transpose_c ? ldc : N * ldc;
+    size_t size_one_d = transpose_d ? ldd : N * ldd;
     size_t size_a     = size_one_a;
     size_t size_b     = size_one_b;
     size_t size_c     = size_one_c;
@@ -421,8 +424,10 @@ void testing_gemm_strided_batched_ex(const Arguments& arg)
     {
         size_a += size_t(stride_a) * size_t(batch_count - 1);
         size_b += size_t(stride_b) * size_t(batch_count - 1);
-        size_c += size_t(stride_c) * size_t(batch_count - 1);
-        size_d += size_t(stride_d) * size_t(batch_count - 1);
+        size_c += transpose_c ? size_t(ldc) * size_t(batch_count - 1)
+                              : size_t(stride_c) * size_t(batch_count - 1);
+        size_d += transpose_d ? size_t(ldd) * size_t(batch_count - 1)
+                              : size_t(stride_d) * size_t(batch_count - 1);
     }
 
     // allocate memory on device
