@@ -109,7 +109,7 @@ ROCBLAS_EXPORT rocblas_ostream::rocblas_ostream(int fd)
 // Construct rocblas_ostream from a filename opened for writing with truncation
 ROCBLAS_EXPORT rocblas_ostream::rocblas_ostream(const char* filename)
 {
-    int fd     = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_APPEND | O_CLOEXEC, 0644);
+    int fd     = open(filename, O_WRONLY | O_CREAT | O_APPEND | O_CLOEXEC, 0644);
     worker_ptr = get_worker(fd);
     if(!worker_ptr)
     {
